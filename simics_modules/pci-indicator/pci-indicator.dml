@@ -1,0 +1,73 @@
+/*
+  pci-indicator.dml - PCI indicator DML code
+
+*/
+
+dml 1.4;
+
+device pci_indicator;
+param desc = "Device for PCI indicator";
+param documentation = "Device emulating PCI seven segment display for number";
+
+import "pci/common.dml";
+is pci_device;
+
+param pci_hotplug = true;
+
+bank pci_config {
+
+    /* This attribute should contain a list of all BAR registers */
+    param base_address_registers = ["base_address_0"];
+
+    register vendor_id { param init_val = 0x104C; } // Texas Instruments
+    register device_id { param init_val = 0xAC10; } // PC Card Controller
+
+    register base_address_0 @ 0x10 is (memory_base_address_32) {
+        param size_bits = 8;
+        param map_func = 1;
+    }
+    register base_address_1 @ 0x14 is (no_base_address_32);
+    register base_address_2 @ 0x18 is (no_base_address_32);
+    register base_address_3 @ 0x1C is (no_base_address_32);
+    register base_address_4 @ 0x20 is (no_base_address_32);
+    register base_address_5 @ 0x24 is (no_base_address_32);
+}
+
+// functions for file access
+header %{
+#include "file-io.h"
+%}
+
+extern void write_to_host(uint64);
+extern set_error_t open_host(attr_value_t *);
+extern attr_value_t get_host_filename();
+
+bank reg is function_mapped_bank {
+    param function = 1;
+
+    register counter size 1 @ 0x0 {
+        is write;
+
+        method write(uint64 value) {
+            log info: "writing to host %d", value;
+            this.val = value;
+            write_to_host(value); // also write to host file if possible
+        }
+    }
+}
+
+attribute filename {
+    param documentation = "File to dump all written values";
+    param type          = "s|n";
+    param configuration = "optional";
+
+    method set(attr_value_t attr) throws {
+        local set_error_t err;
+        (err) = open_host(&attr);
+        if (err != Sim_Set_Ok)
+            throw;
+    }
+    method get() -> (attr_value_t) {
+        return get_host_filename();
+    }
+}

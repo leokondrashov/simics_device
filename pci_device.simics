@@ -1,0 +1,6 @@
+decl { substitute "/mnt/Data/simics-projects/my-simics-project-3/targets/qsp-x86/qsp-clear-linux.simics" }
+run-command-file "/mnt/Data/simics-projects/my-simics-project-3/targets/qsp-x86/qsp-clear-linux.simics"
+
+load-module pci-indicator-component
+new-pci-indicator-card pci_ind
+connect "board.mb.nb.pcie_slot[1]" pci_ind.pci_bus
